@@ -24,7 +24,6 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using AOT;
-using Kixeye.Core.Logging;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -128,20 +127,10 @@ public abstract class GpuTimerBase
 
         if (canUseRenderTimer)
         {
-            if (Log.IsEnabled(null, LogMessageLevel.Info))
-            {
-                Log.Info(null, "GpuTime", "Creating a real GPU timer");
-            }
-
             return new RealGpuTimer();
         }
         else
         {
-            if (Log.IsEnabled(null, LogMessageLevel.Info))
-            {
-                Log.Info(null, "GpuTime", "Creating a dummy GPU timer");
-            }
-            
             return new DummyGpuTimer();
         }
         #endif
