@@ -24,7 +24,9 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using AOT;
+using Kixeye.Core.Logging;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public abstract class GpuTimerBase
 {
@@ -123,10 +125,6 @@ public abstract class GpuTimerBase
 
         // Desktop APIs so we get data in editor
         canUseRenderTimer |= SystemInfo.graphicsDeviceType == GraphicsDeviceType.Direct3D11;
-
-#if UNITY_EDITOR
-        canUseRenderTimer = false;
-#endif
 
         if (canUseRenderTimer)
         {
