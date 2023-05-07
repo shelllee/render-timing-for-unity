@@ -109,7 +109,7 @@ public class RenderTiming : MonoBehaviour {
     var size = 0;
     var list = new List<ShaderTiming>();
 
-    if (!GetMostRecentShaderTimings(out arrayValue, out size))
+    if (!GetLastFrameShaderTimings(out arrayValue, out size))
     {
       return null;
     }
@@ -119,7 +119,7 @@ public class RenderTiming : MonoBehaviour {
     {
       var cur = (ShaderTiming) Marshal.PtrToStructure(arrayValue, typeof(ShaderTiming));
       list.Add(cur);
-      arrayValue = new IntPtr(arrayValue.ToInt32() + shaderTimingSize);
+      arrayValue = IntPtr.Add(arrayValue, shaderTimingSize);
     }
 
     return list;
