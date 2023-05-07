@@ -27,180 +27,188 @@ using UnityEngine.Rendering;
 /// done in WaitForEndOfFrame may not be accounted for, depending on script order.
 ///
 /// TODO: support multiple & nested timings per frame
-public class RenderTiming : MonoBehaviour {
-  [StructLayout(LayoutKind.Sequential)]
-  public struct ShaderTiming
-  {
-    public string VertexName;
-    public string GeometryName;
-    public string HullName;
-    public string DomainName;
-    public string FragmentName;
-
-    public double Time;
-
-    public override string ToString()
+public class RenderTiming : MonoBehaviour
+{
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ShaderTiming
     {
-      StringBuilder sb = new StringBuilder();
-      sb.Append("Shader(");
-      if (!string.IsNullOrEmpty(VertexName))
-      {
-        sb.Append("Vertex=");
-        sb.Append(VertexName);
-      }
-      if (!string.IsNullOrEmpty(GeometryName))
-      {
-        sb.Append(", Geometry=");
-        sb.Append(GeometryName);
-      }
-      if (!string.IsNullOrEmpty(HullName))
-      {
-        sb.Append(", Hull=");
-        sb.Append(HullName);
-      }
-      if (!string.IsNullOrEmpty(DomainName))
-      {
-        sb.Append(", Domain=");
-        sb.Append(DomainName);
-      }
-      if (!string.IsNullOrEmpty(FragmentName))
-      {
-        sb.Append(", Fragment=");
-        sb.Append(FragmentName);
-      }
+        public string VertexName;
+        public string GeometryName;
+        public string HullName;
+        public string DomainName;
+        public string FragmentName;
 
-      sb.Append(") took ");
-      sb.Append(Time);
-      sb.Append("ms this frame");
+        public double Time;
 
-      return sb.ToString();
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("Shader(");
+            if (!string.IsNullOrEmpty(VertexName))
+            {
+                sb.Append("Vertex=");
+                sb.Append(VertexName);
+            }
+            if (!string.IsNullOrEmpty(GeometryName))
+            {
+                sb.Append(", Geometry=");
+                sb.Append(GeometryName);
+            }
+            if (!string.IsNullOrEmpty(HullName))
+            {
+                sb.Append(", Hull=");
+                sb.Append(HullName);
+            }
+            if (!string.IsNullOrEmpty(DomainName))
+            {
+                sb.Append(", Domain=");
+                sb.Append(DomainName);
+            }
+            if (!string.IsNullOrEmpty(FragmentName))
+            {
+                sb.Append(", Fragment=");
+                sb.Append(FragmentName);
+            }
+
+            sb.Append(") took ");
+            sb.Append(Time);
+            sb.Append("ms this frame");
+
+            return sb.ToString();
+        }
     }
-  }
-  
-  public static RenderTiming instance;
 
-  /// True to periodically log timing to debug console.  Honored only at init.
-  public bool logTiming = false;
-  
+    public static RenderTiming instance;
 
-  [DllImport ("RenderTimingPlugin")]
-  private static extern void SetDebugFunction(IntPtr ftp);
-  [DllImport ("RenderTimingPlugin")]
-  private static extern IntPtr GetOnFrameEndFunction();
+    /// True to periodically log timing to debug console.  Honored only at init.
+    public bool logTiming = false;
 
-  [DllImport("RenderTimingPlugin")]
-  [return: MarshalAs(UnmanagedType.I1)]
-  private static extern bool GetLastFrameShaderTimings(out IntPtr arrayPtr, out int size, bool sort = true);
 
-  [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-  private delegate void MyDelegate(string str);
-  private bool isInitialized;
-  private Coroutine loggingCoroutine;
-  private Coroutine updateCoroutine;
+    [DllImport("RenderTimingPlugin")]
+    private static extern void SetDebugFunction(IntPtr ftp);
+    [DllImport("RenderTimingPlugin")]
+    private static extern IntPtr GetOnFrameEndFunction();
 
-  [MonoPInvokeCallback(typeof(MyDelegate))]
-  static void DebugCallback(string str) {
-    // Log(str);
-  }
+    [DllImport("RenderTimingPlugin")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool GetLastFrameShaderTimings(out IntPtr arrayPtr, out int size, bool sort = true);
 
-  static void Log(string str) {
-    Debug.LogWarning("RenderTimingPlugin: " + str);
-  }
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void MyDelegate(string str);
+    private bool isInitialized;
+    private Coroutine loggingCoroutine;
+    private Coroutine updateCoroutine;
 
-  public static List<ShaderTiming> GetShaderTimings(bool sort = true)
-  {
-    var arrayValue = IntPtr.Zero;
-    var size = 0;
-
-    if (!GetLastFrameShaderTimings(out arrayValue, out size, sort))
+    [MonoPInvokeCallback(typeof(MyDelegate))]
+    static void DebugCallback(string str)
     {
-      return null;
+        // Log(str);
     }
 
-    var list = new List<ShaderTiming>(size);
-
-    var shaderTimingSize = Marshal.SizeOf(typeof(ShaderTiming));
-    for (var i = 0; i < size; i++)
+    static void Log(string str)
     {
-      var cur = (ShaderTiming) Marshal.PtrToStructure(arrayValue, typeof(ShaderTiming));
-      list.Add(cur);
-      arrayValue = IntPtr.Add(arrayValue, shaderTimingSize);
+        Debug.LogWarning("RenderTimingPlugin: " + str);
     }
 
-    return list;
-  }
-  
-  private void Awake() {
-    Debug.Assert(instance == null, "only one instance allowed");
-    instance = this;
-    // Note: intentionally not accessing any plugin code here so that leaving the component
-    // disabled will avoid loading the plugin.
-  }
-
-  // called from first OnEnable()
-  private void Init() {
-    MyDelegate callback_delegate = DebugCallback;
-    IntPtr intptr_delegate = Marshal.GetFunctionPointerForDelegate(callback_delegate);
-    SetDebugFunction(intptr_delegate);
-
-    isInitialized = true;
-  }
-
-  private void OnEnable() {
-    if (!isInitialized) {
-      Init();
-    }
-
-    updateCoroutine = StartCoroutine(UpdateOnFrameEnd());
-    
-    if (logTiming) {
-      loggingCoroutine = StartCoroutine(ConsoleDisplay());
-    }
-  }
-
-  private static IEnumerator ConsoleDisplay()
-  {
-    var sb = new StringBuilder();
-    while (true)
+    public static List<ShaderTiming> GetShaderTimings(bool sort = true)
     {
-      yield return new WaitForSeconds(1);
-      yield return new WaitForEndOfFrame();
-      sb.Remove(0, sb.Length);
+        var arrayValue = IntPtr.Zero;
+        var size = 0;
 
-      var timings = GetShaderTimings();
-      var numTimings = timings.Count;
-      ShaderTiming curTiming;
+        if (!GetLastFrameShaderTimings(out arrayValue, out size, sort))
+        {
+            return null;
+        }
 
-      for (var i = 0; i < numTimings; i++)
-      {
-        curTiming = timings[i];
+        var list = new List<ShaderTiming>(size);
 
-        sb.Append(curTiming);
-        sb.Append("\n");
-      }
-      
-      Log(sb.ToString());
+        var shaderTimingSize = Marshal.SizeOf(typeof(ShaderTiming));
+        for (var i = 0; i < size; i++)
+        {
+            var cur = (ShaderTiming)Marshal.PtrToStructure(arrayValue, typeof(ShaderTiming));
+            list.Add(cur);
+            arrayValue = IntPtr.Add(arrayValue, shaderTimingSize);
+        }
+
+        return list;
     }
-  }
 
-  private void OnDisable()
-  {
-    StopCoroutine(updateCoroutine);
-
-    if (loggingCoroutine != null)
+    private void Awake()
     {
-      StopCoroutine(loggingCoroutine);
+        Debug.Assert(instance == null, "only one instance allowed");
+        instance = this;
+        // Note: intentionally not accessing any plugin code here so that leaving the component
+        // disabled will avoid loading the plugin.
     }
-  }
 
-  private static IEnumerator UpdateOnFrameEnd()
-  {
-    while (true)
+    // called from first OnEnable()
+    private void Init()
     {
-      yield return new WaitForEndOfFrame();
-      
-      GL.IssuePluginEvent(GetOnFrameEndFunction(), 0 /* unused */);
+        MyDelegate callback_delegate = DebugCallback;
+        IntPtr intptr_delegate = Marshal.GetFunctionPointerForDelegate(callback_delegate);
+        SetDebugFunction(intptr_delegate);
+
+        isInitialized = true;
     }
-    // ReSharper disable once IteratorNeverReturns
-  }
+
+    private void OnEnable()
+    {
+        if (!isInitialized)
+        {
+            Init();
+        }
+
+        updateCoroutine = StartCoroutine(UpdateOnFrameEnd());
+
+        if (logTiming)
+        {
+            loggingCoroutine = StartCoroutine(ConsoleDisplay());
+        }
+    }
+
+    private static IEnumerator ConsoleDisplay()
+    {
+        var sb = new StringBuilder();
+        while (true)
+        {
+            yield return new WaitForSeconds(1);
+            yield return new WaitForEndOfFrame();
+            sb.Remove(0, sb.Length);
+
+            var timings = GetShaderTimings();
+            var numTimings = timings.Count;
+            ShaderTiming curTiming;
+
+            for (var i = 0; i < numTimings; i++)
+            {
+                curTiming = timings[i];
+
+                sb.Append(curTiming);
+                sb.Append("\n");
+            }
+
+            Log(sb.ToString());
+        }
+    }
+
+    private void OnDisable()
+    {
+        StopCoroutine(updateCoroutine);
+
+        if (loggingCoroutine != null)
+        {
+            StopCoroutine(loggingCoroutine);
+        }
+    }
+
+    private static IEnumerator UpdateOnFrameEnd()
+    {
+        while (true)
+        {
+            yield return new WaitForEndOfFrame();
+
+            GL.IssuePluginEvent(GetOnFrameEndFunction(), 0 /* unused */);
+        }
+        // ReSharper disable once IteratorNeverReturns
+    }
 }
