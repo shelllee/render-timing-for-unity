@@ -80,7 +80,7 @@ public class RenderTiming : MonoBehaviour {
   public static RenderTiming instance;
 
   /// True to periodically log timing to debug console.  Honored only at init.
-  public bool logTiming = true;
+  public bool logTiming = false;
   
 
   [DllImport ("RenderTimingPlugin")]
@@ -100,6 +100,10 @@ public class RenderTiming : MonoBehaviour {
 
   [MonoPInvokeCallback(typeof(MyDelegate))]
   static void DebugCallback(string str) {
+    // Log(str);
+  }
+
+  static void Log(string str) {
     Debug.LogWarning("RenderTimingPlugin: " + str);
   }
 
@@ -107,12 +111,13 @@ public class RenderTiming : MonoBehaviour {
   {
     var arrayValue = IntPtr.Zero;
     var size = 0;
-    var list = new List<ShaderTiming>();
 
     if (!GetLastFrameShaderTimings(out arrayValue, out size, sort))
     {
       return null;
     }
+
+    var list = new List<ShaderTiming>(size);
 
     var shaderTimingSize = Marshal.SizeOf(typeof(ShaderTiming));
     for (var i = 0; i < size; i++)
@@ -159,6 +164,7 @@ public class RenderTiming : MonoBehaviour {
     while (true)
     {
       yield return new WaitForSeconds(1);
+      yield return new WaitForEndOfFrame();
       sb.Remove(0, sb.Length);
 
       var timings = GetShaderTimings();
@@ -173,7 +179,7 @@ public class RenderTiming : MonoBehaviour {
         sb.Append("\n");
       }
       
-      DebugCallback(sb.ToString());
+      Log(sb.ToString());
     }
   }
 
