@@ -90,7 +90,7 @@ public class RenderTiming : MonoBehaviour {
 
   [DllImport("RenderTimingPlugin")]
   [return: MarshalAs(UnmanagedType.I1)]
-  private static extern bool GetMostRecentShaderTimings(out IntPtr arrayPtr, out int size);
+  private static extern bool GetLastFrameShaderTimings(out IntPtr arrayPtr, out int size, bool sort = true);
 
   [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
   private delegate void MyDelegate(string str);
@@ -103,13 +103,13 @@ public class RenderTiming : MonoBehaviour {
     Debug.LogWarning("RenderTimingPlugin: " + str);
   }
 
-  public static List<ShaderTiming> GetShaderTimings()
+  public static List<ShaderTiming> GetShaderTimings(bool sort = true)
   {
     var arrayValue = IntPtr.Zero;
     var size = 0;
     var list = new List<ShaderTiming>();
 
-    if (!GetLastFrameShaderTimings(out arrayValue, out size))
+    if (!GetLastFrameShaderTimings(out arrayValue, out size, sort))
     {
       return null;
     }

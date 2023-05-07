@@ -137,7 +137,7 @@ extern "C" UnityRenderingEvent UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API GetOnF
     return OnFrameEnd;
 }
 
-extern "C" bool UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API GetLastFrameShaderTimings(ShaderTime** times, int32_t* size) 
+extern "C" bool UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API GetLastFrameShaderTimings(ShaderTime** times, int32_t* size, bool sort = true) 
 {
     static std::vector<ShaderTime> timingsList;
 
@@ -173,7 +173,10 @@ extern "C" bool UNITY_INTERFACE_EXPORT UNITY_INTERFACE_API GetLastFrameShaderTim
         return false;
     }
 
-    std::sort(timingsList.begin(), timingsList.end(), [](const ShaderTime& timing1, const ShaderTime& timing2) { return timing1.Time > timing2.Time; });
+    if (sort)
+    {
+        std::sort(timingsList.begin(), timingsList.end(), [](const ShaderTime& lh, const ShaderTime& rh) { return lh.Time > rh.Time; });
+    }
 
     *times = &timingsList.front();
     *size = static_cast<int32_t>(timingsList.size());
