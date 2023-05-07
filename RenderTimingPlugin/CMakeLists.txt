@@ -55,14 +55,20 @@ elseif(APPLE)
 else()
     # Windows only. Linux is not supported
 
-    target_include_directories(RenderTimingPlugin SYSTEM PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/glew/include/)
+    add_definitions(-DUNITY_WIN)
+    
+    include("C:/workspace/projects/vcpkg/scripts/buildsystems/vcpkg.cmake")
+    
+    find_package(GLEW REQUIRED)
+
+    include_directories(${GLEW_INCLUDE_DIR})
+
     target_link_libraries(RenderTimingPlugin PRIVATE opengl32)
+    target_link_libraries(RenderTimingPlugin PRIVATE GLEW::GLEW)
 
     if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "4") 
         set_output_directories(RenderTimingPlugin ${UNITY_PLUGINS_DIR}/x86)
-        target_link_libraries(RenderTimingPlugin PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/glew/lib/Release/Win32/glew32.lib)
     else()
         set_output_directories(RenderTimingPlugin ${UNITY_PLUGINS_DIR}/x86_64)
-        target_link_libraries(RenderTimingPlugin PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/glew/lib/Release/x64/glew32.lib)
     endif()    
 endif()
