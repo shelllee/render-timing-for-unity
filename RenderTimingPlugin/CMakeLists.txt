@@ -19,7 +19,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CONFIGURATION_TYPES Release)
 
-set(UNITY_PLUGINS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../Plugins)
+set(UNITY_PLUGINS_DIR ${CMAKE_CURRENT_LIST_DIR}/../RenderTiming/Assets/Plugins/RenderTiming)
 
 set(COMMON_SOURCE 
     RenderTimingPlugin.h RenderTimingPlugin.cpp
@@ -40,7 +40,9 @@ add_library(RenderTimingPlugin SHARED ${COMMON_SOURCE})
 # that, but for now OpenGL isn't supported on MacOS
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Android")
-    set_output_directories(RenderTimingPlugin ${UNITY_PLUGINS_DIR}/Android/libs/armeabi-v7a)
+    # https://developer.android.com/ndk/guides/cmake#command-line
+    # NDK/build/cmake/android.toolchain.cmake
+    set_output_directories(RenderTimingPlugin ${UNITY_PLUGINS_DIR}/Android/${ANDROID_ABI})
     add_definitions(-DUNITY_ANDROID)
     target_link_libraries(RenderTimingPlugin GLESv3)
 
