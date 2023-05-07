@@ -43,27 +43,27 @@ public class RenderTiming : MonoBehaviour {
     {
       StringBuilder sb = new StringBuilder();
       sb.Append("Shader(");
-      if (!VertexName.IsNullOrEmpty())
+      if (!string.IsNullOrEmpty(VertexName))
       {
         sb.Append("Vertex=");
         sb.Append(VertexName);
       }
-      if (!GeometryName.IsNullOrEmpty())
+      if (!string.IsNullOrEmpty(GeometryName))
       {
         sb.Append(", Geometry=");
         sb.Append(GeometryName);
       }
-      if (!HullName.IsNullOrEmpty())
+      if (!string.IsNullOrEmpty(HullName))
       {
         sb.Append(", Hull=");
         sb.Append(HullName);
       }
-      if (!DomainName.IsNullOrEmpty())
+      if (!string.IsNullOrEmpty(DomainName))
       {
         sb.Append(", Domain=");
         sb.Append(DomainName);
       }
-      if (!FragmentName.IsNullOrEmpty())
+      if (!string.IsNullOrEmpty(FragmentName))
       {
         sb.Append(", Fragment=");
         sb.Append(FragmentName);
